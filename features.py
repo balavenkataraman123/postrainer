@@ -107,6 +107,7 @@ while cap.isOpened():
         break
 
 cap.release()
+cv2.destroyAllWindows()
 
 # the parameters of the pose
 pose_params = {}
