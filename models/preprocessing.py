@@ -42,10 +42,20 @@ def get_pose_info(image):
 class Preprocessing:
     @staticmethod
     def get_stats(vecs: np.array) -> dict:
+        """
+        Generates a list of statistics, some of which may be appropriate for a machine learning model
+        :param vecs: a list of vectors of body positions
+        :return: a dictionary with all suitable statistics
+        """
         raise NotImplementedError("A subclass should implement this")
 
     @staticmethod
     def preprocess(vecs: np.array) -> np.array:
+        """
+        Generates preprocessed vectors suitable for a machine learning model
+        :param vecs: a list of vectors of body positions
+        :return: an np array, a vector with all suitable params
+        """
         raise NotImplementedError("A subclass should implement this")
 
 class Pushup(Preprocessing):

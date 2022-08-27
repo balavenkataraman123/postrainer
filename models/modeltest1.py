@@ -29,7 +29,7 @@ cap = cv2.VideoCapture(0)
 numpushup = 0
 currstate = 1 # 1 for up and 0 for down
 predictionaverage = 0
-past40cdis = []
+past40elbow = []
 
 exercise = 0
 justchanged = 1
@@ -60,7 +60,8 @@ while cap.isOpened():
             if parts is not None:
                 vecs, landmarks = parts
                 stats = (Pushup.get_stats(vecs))
-                cdis = stats["cdis"]
+
+                elbow_angle = (stats["lef_ea"] + stats["rig_ea"]) / 2
                 trsa = stats["ta"]
                 image.flags.writeable = True    
                 input_vector = Pushup.preprocess(vecs).reshape((1, -1))
@@ -72,21 +73,23 @@ while cap.isOpened():
                     image = cv2.putText(image, "The camera cannot see you well", (20, 120), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
                 if prediction > 0.5:
                     image = cv2.copyMakeBorder(image ,20,20,20,20,cv2.BORDER_CONSTANT,value=[0, 255, 0])
-                    print(cdis)
-                    past40cdis.append(cdis)
-                    if len(past40cdis) > 40:
-                        past40cdis.pop(0)
-                    if cdis <= 110 and currstate == 1:
+                    print(elbow_angle)
+                    past40elbow.append(elbow_angle)
+
+                    if len(past40elbow) > 40:
+                        past40elbow.pop(0)
+
+                    if elbow_angle <= 1.309 and currstate == 1:
                         currstate = 0
-                    if cdis >= 190 and currstate == 0:
+                    if elbow_angle >= 2.61799 and currstate == 0:
                         currstate = 1
                         numpushup += 1
                     if numpushup == reps[exercise]:
                         justchanged = 1
                         exercise += 1
-                    if min(past40cdis) > 110:
+                    if min(past40elbow) > 110:
                         image = cv2.putText(image, "YOU NEED TO GO LOWER!!! ", (20, 200), cv2.FONT_HERSHEY_SIMPLEX,1, (0, 0, 255), 2, cv2.LINE_AA)
-                    if len(past40cdis) > 20 and trsa < 2:
+                    if len(past40elbow) > 20 and trsa < 2:
                         image = cv2.putText(image, "KEEP YOUR BACK STRAIGHT!!!! ", (20, 240), cv2.FONT_HERSHEY_SIMPLEX,1, (0, 0, 255), 2, cv2.LINE_AA)
 
                     image = cv2.putText(image, "YOUR SCORE: " + str(prediction) , (20, 160), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
