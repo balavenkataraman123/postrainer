@@ -124,3 +124,39 @@ class Situp(Preprocessing):
         stats = Situp.get_stats(vecs)
         names = ["r_ha", "l_ha", "ka", "tr", "r_ts", "l_ts", "ks"]
         return np.array([stats[i] for i in names])
+
+class Squat(Preprocessing):
+    @staticmethod
+    def get_stats(vecs: np.array) -> dict:
+        thighs = (vecs[26] - vecs[24], vecs[25] - vecs[23]) # right, left
+        torso = (vecs[24] - vecs[12], vecs[23] - vecs[11], vecs[12] - vecs[11], vecs[24] - vecs[23])  # right, left, top, bottom
+
+        # torso height / torso width; useful for detecting if posture is sideways
+        torso_ratio = (linalg.norm(torso[0]) + linalg.norm(torso[1])) / (linalg.norm(torso[2]) + linalg.norm(torso[3]))
+        torso_sin = (abs(torso[0][1] / linalg.norm(torso[0])) + abs(torso[1][1] / linalg.norm(torso[1]))) / 2
+
+        # sine of various body parts
+        rig_thigh_sin = thighs[0][1] / norm(thighs[0])
+        lef_thigh_sin = thighs[1][1] / norm(thighs[1])
+
+        rig_knee_angle = angle(vecs[28] - vecs[26], vecs[24] - vecs[26])
+        lef_knee_angle = angle(vecs[27] - vecs[25], vecs[23] - vecs[25])
+
+        rig_hip_angle = angle(vecs[12] - vecs[24], vecs[26] - vecs[24])
+        lef_hip_angle = angle(vecs[25] - vecs[23], vecs[11] - vecs[23])
+        avg_hip_angle = (lef_hip_angle + rig_hip_angle) / 2
+        return {
+            "tr": torso_ratio,
+            "ts": torso_sin,
+            "r_ts": rig_thigh_sin,
+            "l_ts": lef_thigh_sin,
+            "r_ka": rig_knee_angle,
+            "l_ka": lef_knee_angle,
+            "ha": avg_hip_angle
+        }
+
+    @staticmethod
+    def preprocess(vecs: np.array) -> np.array:
+        names = ["tr", "ts", "r_ts", "l_ts", "r_ka", "l_ka", "ha"]
+        stats = Squat.get_stats(vecs)
+        return np.array([stats[i] for i in names])

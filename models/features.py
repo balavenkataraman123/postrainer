@@ -31,7 +31,7 @@ while cap.isOpened():
     image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
     if parts is not None:
         vecs, landmarks = parts
-        print(Situp.get_stats(vecs))
+        print(Squat.get_stats(vecs))
 
         image.flags.writeable = True
         mp_drawing.draw_landmarks(
@@ -59,7 +59,7 @@ for image in frames:
         # add the pose and its pose information
         used_frames.append(image)
         vecs, landmarks = cur_pose
-        for name, value in Situp.get_stats(vecs).items():
+        for name, value in Squat.get_stats(vecs).items():
             if name not in pose_params:
                 pose_params[name] = []
             pose_params[name].append(value)
