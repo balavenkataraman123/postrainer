@@ -22,7 +22,7 @@ def collect_frames(name: str, ratio: float):
 
     return frames[:int(len(frames) * ratio)]
 
-file = "data/situp-0.mp4"
+file = "data/squat-0.mp4"
 
 frames = collect_frames(file, 1)
 features = [Situp.get_stats(get_pose_info(i)[0]) for i in frames if get_pose_info(i) and not get_pose_info(i) is None]
