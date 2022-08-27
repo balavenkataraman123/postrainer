@@ -31,7 +31,7 @@ while cap.isOpened():
     image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
     if parts is not None:
         vecs, landmarks = parts
-        print(Squat.get_stats(vecs))
+        print(BicepCurl.get_stats(vecs))
 
         image.flags.writeable = True
         mp_drawing.draw_landmarks(
@@ -59,7 +59,7 @@ for image in frames:
         # add the pose and its pose information
         used_frames.append(image)
         vecs, landmarks = cur_pose
-        for name, value in Squat.get_stats(vecs).items():
+        for name, value in BicepCurl.get_stats(vecs).items():
             if name not in pose_params:
                 pose_params[name] = []
             pose_params[name].append(value)
@@ -80,7 +80,7 @@ for i in range(0, len(used_frames), 5):
     plt.title("Pose Parameters")
 
     ci = 0
-    ways = ['b', 'g', 'r', 'c', 'm', 'y', 'k']
+    ways = ['b', 'g', 'r', 'c', 'm', 'y', 'k', 'b']
     for name, params in pose_params.items():
         plt.plot(range(len(params)), params / params.max(), ways[ci % len(ways)], label=name)
         ci += 1

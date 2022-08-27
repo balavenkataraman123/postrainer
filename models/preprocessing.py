@@ -160,3 +160,41 @@ class Squat(Preprocessing):
         names = ["tr", "ts", "r_ts", "l_ts", "r_ka", "l_ka", "ha"]
         stats = Squat.get_stats(vecs)
         return np.array([stats[i] for i in names])
+
+class BicepCurl(Preprocessing):
+    @staticmethod
+    def get_stats(vecs: np.array) -> dict:
+        torso = (vecs[24] - vecs[12], vecs[23] - vecs[11], vecs[12] - vecs[11], vecs[24] - vecs[23])  # right, left, top, bottom
+
+        torso_ratio = (linalg.norm(torso[0]) + linalg.norm(torso[1])) / (linalg.norm(torso[2]) + linalg.norm(torso[3]))
+
+        rig_hip_angle = angle(vecs[12] - vecs[24], vecs[26] - vecs[24])
+        lef_hip_angle = angle(vecs[25] - vecs[23], vecs[11] - vecs[23])
+        avg_hip_angle = (lef_hip_angle + rig_hip_angle) / 2
+
+        thighs = (vecs[26] - vecs[24], vecs[25] - vecs[23])  # right, left
+        rig_thigh_sin = thighs[0][1] / norm(thighs[0])
+        lef_thigh_sin = thighs[1][1] / norm(thighs[1])
+        avg_thigh_sin = (rig_thigh_sin + lef_thigh_sin) / 2
+
+        lef_elbow_angle = angle(vecs[11] - vecs[13], vecs[15] - vecs[13])
+        rig_elbow_angle = angle(vecs[12] - vecs[14], vecs[16] - vecs[14])
+
+        rig_shoulder_angle = angle(vecs[14] - vecs[12], vecs[24] - vecs[12])
+        lef_shoulder_angle = angle(vecs[13] - vecs[11], vecs[23] - vecs[11])
+        avg_shoulder_angle = (lef_shoulder_angle + rig_shoulder_angle) / 2
+
+        return {
+            "tr": torso_ratio,
+            "ha": avg_hip_angle,
+            "th-s": avg_thigh_sin,
+            "l-ea": lef_elbow_angle,
+            "r-ea": rig_elbow_angle,
+            "sa": avg_shoulder_angle,
+        }
+
+    @staticmethod
+    def preprocess(vecs: np.array) -> np.array:
+        names = ["tr", "ha", "th-s", "l-ea", "r-ea", "sa"]
+        stats = BicepCurl.get_stats(vecs)
+        return np.array([stats[i] for i in names])
