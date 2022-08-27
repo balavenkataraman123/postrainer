@@ -83,9 +83,9 @@ while cap.isOpened():
         print("Ignoring empty camera frame.")
         continue
 
-    frames.append(image)
     image.flags.writeable = False
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    frames.append(image)
     parts = get_pose_info(image)
 
     image.flags.writeable = True
