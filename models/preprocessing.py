@@ -87,14 +87,12 @@ class Pushup(Preprocessing):
 class Situp(Preprocessing):
     @staticmethod
     def get_stats(vecs: np.array) -> dict:
-        lef_elbow_angle = angle(vecs[11] - vecs[13], vecs[15] - vecs[13])
-        rig_elbow_angle = angle(vecs[12] - vecs[14], vecs[16] - vecs[14])
-
         rig_hip_angle = angle(vecs[12] - vecs[24], vecs[26] - vecs[24])
         lef_hip_angle = angle(vecs[25] - vecs[23], vecs[11] - vecs[23])
 
         rig_knee_angle = angle(vecs[28] - vecs[26], vecs[24] - vecs[26])
         lef_knee_angle = angle(vecs[27] - vecs[25], vecs[23] - vecs[25])
+        avg_knee_angle = (rig_knee_angle + lef_knee_angle) / 2
 
         torso = (vecs[24] - vecs[12], vecs[23] - vecs[11], vecs[12] - vecs[11], vecs[24] - vecs[23])  # right, left, top, bottom
         thighs = (vecs[26] - vecs[24], vecs[25] - vecs[23]) # right, left
@@ -104,29 +102,25 @@ class Situp(Preprocessing):
         torso_ratio = (linalg.norm(torso[0]) + linalg.norm(torso[1])) / (linalg.norm(torso[2]) + linalg.norm(torso[3]))
 
         # sine of various body parts
-        torso_sin = (abs(torso[0][1] / norm(torso[0])) + abs(torso[1][1] / norm(torso[1]))) / 2
         rig_thigh_sin = thighs[0][1] / norm(thighs[0])
         lef_thigh_sin = thighs[1][1] / norm(thighs[1])
+
         rig_knee_sin = knees[0][1] / norm(knees[0])
         lef_knee_sin = knees[1][1] / norm(knees[1])
+        avg_knee_sin = (rig_knee_sin + lef_knee_sin) / 2
 
         return {
             "r_ha": rig_hip_angle,
             "l_ha": lef_hip_angle,
-            "r_ka": rig_knee_angle,
-            "l_ka": lef_knee_angle,
-            "l_ea": lef_elbow_angle,
-            "r_ea": rig_elbow_angle,
+            "ka": avg_knee_angle,
             "tr": torso_ratio,
-            "ts": torso_sin,
             "r_ts": rig_thigh_sin,
             "l_ts": lef_thigh_sin,
-            "rig_ks": rig_knee_sin,
-            "lef_ks": lef_knee_sin
+            "ks": avg_knee_sin
         }
 
     @staticmethod
     def preprocess(vecs: np.array) -> np.array:
         stats = Situp.get_stats(vecs)
-        names = ["r_ha", "l_ha", "r_ka", "l_ka", "l_ea", "r_ea", "tr", "ts", "r_ts", "l_ts", "rig_ks", "lef_ks"]
+        names = ["r_ha", "l_ha", "ka", "tr", "r_ts", "l_ts", "ks"]
         return [stats[i] for i in names]

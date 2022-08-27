@@ -80,9 +80,9 @@ for i in range(0, len(used_frames), 5):
     plt.title("Pose Parameters")
 
     ci = 0
-    ways = ['b', 'g', 'r', 'c', 'm', 'y', 'w']
+    ways = ['b', 'g', 'r', 'c', 'm', 'y', 'k']
     for name, params in pose_params.items():
-        plt.plot(range(len(params)), params / params.max(), ways[ci], label=name)
+        plt.plot(range(len(params)), params / params.max(), ways[ci % len(ways)], label=name)
         ci += 1
     plt.legend()
     plt.axvline(x=i)
