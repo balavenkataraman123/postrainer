@@ -5,6 +5,7 @@ import numpy as np
 import numpy.linalg as linalg
 from numpy.linalg import norm
 import matplotlib.pyplot as plt
+import time
 from math import cos, sin, acos, asin, sqrt
 import tensorflow as tf
 from tensorflow import keras
@@ -21,6 +22,127 @@ motivquotes = [
 "\"Blood, sweat and respect. First two you give. Last one you earn.\" -The Rock"
 ]
 
+class Screen:
+    def __init__(self, camera: cv2.VideoCapture):
+        self.cap = camera
+
+        self.last_event = 0
+        self.cur_message = ""
+        self.message_time = 3
+
+    @staticmethod
+    def query_model(model: keras.Model, vecs: np.array, workout: Preprocessing):
+        return model(workout.preprocess(vecs).reshape((1, -1))).numpy()[0, 0]
+
+    def add_message(self, message: str):
+        """
+        Adds a message, not doing so if it has not passed the cooldown or there is currently a message
+        :param message: the mesage to add
+        :return: whether the message was added
+        """
+        if message is "":
+            return False
+
+        if self.cur_message == "":
+            self.cur_message = message
+            self.last_event = time.time()
+            return True
+        if message == self.cur_message:
+            self.last_event = time.time()
+            return True
+        return False
+
+    def augment_with_message(self, image: np.array):
+        if self.cur_message is not "" and time.time() - self.last_event >= self.message_time:
+            self.cur_message = ""
+            self.last_event = time.time()
+        if self.cur_message is not "":
+            image = cv2.putText(image, self.cur_message, (20, 240), cv2.FONT_HERSHEY_SIMPLEX,1, (0, 0, 255), 2, cv2.LINE_AA)
+        return image
+
+    @staticmethod
+    def draw_border(image: np.array, color: list) -> np.array:
+        return cv2.copyMakeBorder(image, 20, 20, 20, 20, cv2.BORDER_CONSTANT, value=color)
+class SitupScreen(Screen):
+    def __init__(self, camera: cv2.VideoCapture):
+        super().__init__(camera)
+        self.model = keras.models.load_model("situp-model.keras")
+        self.last_state = None
+        self.state_torso = []
+        self.tot_situp = 0
+
+        self.up_boundary = 1.25
+        self.down_boundary = 1.8
+        self.low_requirement = 0.1
+        self.high_requirement = 0.95
+    def render(self) -> np.array:
+        success, frame = self.cap.read()
+        if not success:
+            print("Ignoring emtpy camera frame")
+            return
+
+        image = frame
+        image.flags.writeable = False
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        parts = get_pose_info(image)
+
+        image.flags.writeable = True
+        image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+        image = cv2.resize(image, (1280, 960), interpolation=cv2.INTER_AREA)
+
+        if parts is not None:
+            vecs, landmarks = parts
+            mp_drawing.draw_landmarks(
+                image,
+                landmarks,
+                mp_pose.POSE_CONNECTIONS,
+                landmark_drawing_spec=mp_drawing_styles.get_default_pose_landmarks_style())
+            stats = Situp.get_stats(vecs)
+
+            in_position = Screen.query_model(self.model, vecs, Situp())
+            # have we detected the person
+            if in_position >= 0.5:
+                # get some measurements
+                torso_angle = (stats['r_ha'] + stats['l_ha']) / 2
+                torso_sin = stats['ts']
+
+                if torso_angle <= self.up_boundary:
+                    # now in "up state"
+                    if self.last_state is "down":
+                        # with all the data from the "down-time", we check to see if the person went low enough
+                        down_enough = False
+                        for i in self.state_torso:
+                            if i <= self.down_boundary:
+                                down_enough = True
+                        if not down_enough:
+                            self.add_message("When going down, make sure to stay flat to the ground")
+                        self.state_torso.clear()
+                        self.tot_situp += 1
+                    self.last_state = "up"
+
+                    self.state_torso.append(torso_sin)
+                if torso_angle >= self.down_boundary:
+                    # now in "down state"
+                    if self.last_state is "up":
+                        # check if the person went high enough when they went up
+                        up_enough = False
+                        for i in self.state_torso:
+                            if i >= self.high_requirement:
+                                up_enough = True
+                        if not up_enough:
+                            self.add_message("When going up, make sure to come all the way up")
+                        self.state_torso.clear()
+                    self.last_state = "down"
+
+                    self.state_torso.append(torso_sin)
+                image = Screen.draw_border(image, [0, 255, 0])
+            else:
+                image = Screen.draw_border(image, [0, 0, 255])
+
+        image = self.augment_with_message(image)
+        image = cv2.putText(image, str(self.tot_situp), (20, 80), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
+        return image
+
 model = keras.models.load_model("pushup-model.keras")
 
 # define the camera
@@ -31,14 +153,16 @@ currstate = 1 # 1 for up and 0 for down
 predictionaverage = 0
 past40elbow = []
 
-exercise = 0
+exercise = 1
 justchanged = 1
 
-exercises = ["PUSHUPS"]
+exercises = ["PUSHUPS", "SITUPS"]
 reps = [10]
 jctimer = 0
 thismotquote = ""
 minvis = 1
+
+situp_screen = SitupScreen(cap)
 while cap.isOpened():
     success, image = cap.read()
     if not success:
@@ -110,6 +234,8 @@ while cap.isOpened():
                 image = cv2.putText(image, "do your pushup parallel to your screen", (10, 115), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA,)    
 
             image = cv2.putText(image, thismotquote, (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2, cv2.LINE_AA,)
+    elif exercises[exercise] == "SITUPS":
+        image = situp_screen.render()
     cv2.imshow("Image", image)
     if cv2.waitKey(5) & 0xFF == 27:
         break

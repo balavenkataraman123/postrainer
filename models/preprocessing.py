@@ -110,6 +110,7 @@ class Situp(Preprocessing):
 
         # torso height / torso width; useful for detecting if posture is sideways
         torso_ratio = (linalg.norm(torso[0]) + linalg.norm(torso[1])) / (linalg.norm(torso[2]) + linalg.norm(torso[3]))
+        torso_sin = (abs(torso[0][1] / linalg.norm(torso[0])) + abs(torso[1][1] / linalg.norm(torso[1]))) / 2
 
         # sine of various body parts
         rig_thigh_sin = thighs[0][1] / norm(thighs[0])
@@ -126,7 +127,8 @@ class Situp(Preprocessing):
             "tr": torso_ratio,
             "r_ts": rig_thigh_sin,
             "l_ts": lef_thigh_sin,
-            "ks": avg_knee_sin
+            "ks": avg_knee_sin,
+            "ts": torso_sin
         }
 
     @staticmethod

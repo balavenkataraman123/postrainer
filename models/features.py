@@ -31,7 +31,7 @@ while cap.isOpened():
     image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
     if parts is not None:
         vecs, landmarks = parts
-        print(BicepCurl.get_stats(vecs))
+        print(Pushup.get_stats(vecs)['ta'])
 
         image.flags.writeable = True
         mp_drawing.draw_landmarks(
