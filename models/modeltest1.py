@@ -98,6 +98,10 @@ while cap.isOpened():
             jctimer -= 1
             image = cv2.resize(image, (1280, 960), interpolation=cv2.INTER_AREA)
             image = cv2.putText(image, "DO " + str(reps[exercise]) + " " + exercises[exercise], (20, 20), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
+            if exercises[exercise] == "PUSHUPS":
+                image = cv2.putText(image, "put your laptop on the floor, about 6 feet away from you", (10, 90), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA,)    
+                image = cv2.putText(image, "do your pushup parallel to your screen", (10, 115), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA,)    
+
             image = cv2.putText(image, thismotquote, (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2, cv2.LINE_AA,)
     cv2.imshow("Image", image)
     if cv2.waitKey(5) & 0xFF == 27:
