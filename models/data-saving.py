@@ -36,7 +36,7 @@ while cap.isOpened():
 cap.release()
 cv2.destroyAllWindows()
 
-video = cv2.VideoWriter("no-pushup-0.mp4", 0, 15, (640, 480))
+video = cv2.VideoWriter("no-situp-0.mp4", 0, 15, (640, 480))
 
 for i in range(len(frames)):
     parts = get_pose_info(frames[i])
