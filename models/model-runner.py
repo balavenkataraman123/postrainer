@@ -14,7 +14,7 @@ from preprocessing import *
 
 pushup_model = keras.models.load_model("pushup-model.keras")
 situp_model = keras.models.load_model("situp-model.keras")
-
+squat_model = keras.models.load_model("squat-model.keras")
 
 # define the camera
 cap = cv2.VideoCapture(0)
@@ -38,10 +38,13 @@ while cap.isOpened():
 
         pushup_prediction = pushup_model(Pushup.preprocess(vecs).reshape((1, -1))).numpy()[0, 0]
         situp_prediction = situp_model(Situp.preprocess(vecs).reshape((1, -1))).numpy()[0, 0]
+        squat_prediction = squat_model(Squat.preprocess(vecs).reshape((1, -1))).numpy()[0, 0]
 
         image = cv2.putText(image, str("Pushup" if pushup_prediction > 0.5 else "No Pushup"), (20, 40),
                             cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
         image = cv2.putText(image, str("Situp" if situp_prediction > 0.5 else "No Situp"), (20, 80),
+                            cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
+        image = cv2.putText(image, str("Squat" if squat_prediction > 0.5 else "No Squat"), (20, 120),
                             cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
 
         mp_drawing.draw_landmarks(
