@@ -70,11 +70,13 @@ class SitupScreen(Screen):
         self.last_state = None
         self.state_torso = []
         self.tot_situp = 0
+        self.last_up = 0
 
-        self.up_boundary = 1.25
+        self.up_boundary = 1.35
         self.down_boundary = 1.8
         self.low_requirement = 0.1
         self.high_requirement = 0.95
+        self.down_time = 5
     def render(self) -> np.array:
         success, frame = self.cap.read()
         if not success:
@@ -118,6 +120,7 @@ class SitupScreen(Screen):
                             self.add_message("When going down, make sure to stay flat to the ground")
                         self.state_torso.clear()
                         self.tot_situp += 1
+                    self.last_up = time.time()
                     self.last_state = "up"
 
                     self.state_torso.append(torso_sin)
@@ -135,6 +138,9 @@ class SitupScreen(Screen):
                     self.last_state = "down"
 
                     self.state_torso.append(torso_sin)
+
+                if time.time() - self.last_up >= self.down_time:
+                    self.add_message("Let's do another sit up (if you're already doing them, come higher up)!!")
                 image = Screen.draw_border(image, [0, 255, 0])
             else:
                 image = Screen.draw_border(image, [0, 0, 255])
