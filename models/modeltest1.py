@@ -59,8 +59,9 @@ while cap.isOpened():
             image = cv2.resize(image, (1280, 960), interpolation=cv2.INTER_AREA)
             if parts is not None:
                 vecs, landmarks = parts
-                cdis = (Pushup.get_stats(vecs)['cdis'])
-
+                stats = (Pushup.get_stats(vecs))
+                cdis = stats["cdis"]
+                trsa = stats["ta"]
                 image.flags.writeable = True    
                 input_vector = Pushup.preprocess(vecs).reshape((1, -1))
                 
@@ -85,6 +86,9 @@ while cap.isOpened():
                         exercise += 1
                     if min(past40cdis) > 110:
                         image = cv2.putText(image, "YOU NEED TO GO LOWER!!! ", (20, 200), cv2.FONT_HERSHEY_SIMPLEX,1, (0, 0, 255), 2, cv2.LINE_AA)
+                    if len(past40cdis) > 20 and trsa < 2.5:
+                        image = cv2.putText(image, "KEEP YOUR BACK STRAIGHT!!!! ", (20, 240), cv2.FONT_HERSHEY_SIMPLEX,1, (0, 0, 255), 2, cv2.LINE_AA)
+
                     image = cv2.putText(image, "YOUR SCORE: " + str(prediction) , (20, 160), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
                 else:
                     image = cv2.copyMakeBorder(image ,20,20,20,20,cv2.BORDER_CONSTANT,value=[0, 0, 255])
