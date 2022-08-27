@@ -11,6 +11,9 @@ import tensorflow as tf
 from tensorflow import keras
 from keras import layers
 import random
+
+from typing import List
+
 from preprocessing import *
 from PIL import Image
 
@@ -25,39 +28,15 @@ motivquotes = [
 class Screen:
     def __init__(self, camera: cv2.VideoCapture):
         self.cap = camera
-
-        self.last_event = 0
-        self.cur_message = ""
-        self.message_time = 3
+        self.increment = 40
 
     @staticmethod
     def query_model(model: keras.Model, vecs: np.array, workout: Preprocessing):
         return model(workout.preprocess(vecs).reshape((1, -1))).numpy()[0, 0]
 
-    def add_message(self, message: str):
-        """
-        Adds a message, not doing so if it has not passed the cooldown or there is currently a message
-        :param message: the mesage to add
-        :return: whether the message was added
-        """
-        if message is "":
-            return False
-
-        if self.cur_message == "":
-            self.cur_message = message
-            self.last_event = time.time()
-            return True
-        if message == self.cur_message:
-            self.last_event = time.time()
-            return True
-        return False
-
-    def augment_with_message(self, image: np.array):
-        if self.cur_message is not "" and time.time() - self.last_event >= self.message_time:
-            self.cur_message = ""
-            self.last_event = time.time()
-        if self.cur_message is not "":
-            image = cv2.putText(image, self.cur_message, (20, 240), cv2.FONT_HERSHEY_SIMPLEX,1, (0, 0, 255), 2, cv2.LINE_AA)
+    def augment_with_message(self, image: np.array, messages: List[str]):
+        for message, y in zip(messages, range(120, 120 + 40 * len(messages), 40)):
+            image = cv2.putText(image, message, (20, y), cv2.FONT_HERSHEY_SIMPLEX,1, (0, 0, 255), 2, cv2.LINE_AA)
         return image
 
     @staticmethod
@@ -71,6 +50,9 @@ class SitupScreen(Screen):
         self.state_torso = []
         self.tot_situp = 0
         self.last_up = 0
+
+        self.high_enough = True
+        self.low_enough = True
 
         self.up_boundary = 1.35
         self.down_boundary = 1.8
@@ -92,6 +74,8 @@ class SitupScreen(Screen):
         image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
         image = cv2.resize(image, (1280, 960), interpolation=cv2.INTER_AREA)
 
+        messages = []
+
         if parts is not None:
             vecs, landmarks = parts
             mp_drawing.draw_landmarks(
@@ -112,12 +96,10 @@ class SitupScreen(Screen):
                     # now in "up state"
                     if self.last_state is "down":
                         # with all the data from the "down-time", we check to see if the person went low enough
-                        down_enough = False
+                        self.low_enough = False
                         for i in self.state_torso:
                             if i <= self.down_boundary:
-                                down_enough = True
-                        if not down_enough:
-                            self.add_message("When going down, make sure to stay flat to the ground")
+                                self.low_enough = True
                         self.state_torso.clear()
                         self.tot_situp += 1
                     self.last_up = time.time()
@@ -128,24 +110,28 @@ class SitupScreen(Screen):
                     # now in "down state"
                     if self.last_state is "up":
                         # check if the person went high enough when they went up
-                        up_enough = False
+                        self.high_enough = False
                         for i in self.state_torso:
                             if i >= self.high_requirement:
-                                up_enough = True
-                        if not up_enough:
-                            self.add_message("When going up, make sure to come all the way up")
+                                self.high_enough = True
                         self.state_torso.clear()
                     self.last_state = "down"
 
                     self.state_torso.append(torso_sin)
 
+                messages = []
+                if not self.low_enough:
+                    messages.append("When going down, make sure to be flat to the ground")
+                if not self.high_enough:
+                    messages.append("When going up, make sure to come all the way up")
                 if time.time() - self.last_up >= self.down_time:
-                    self.add_message("Let's do another sit up (if you're already doing them, come higher up)!!")
+                    messages.append("Let's do another sit up (if you're already doing them, come higher up)!!")
+
+                image = self.augment_with_message(image, messages)
                 image = Screen.draw_border(image, [0, 255, 0])
             else:
                 image = Screen.draw_border(image, [0, 0, 255])
 
-        image = self.augment_with_message(image)
         image = cv2.putText(image, str(self.tot_situp), (20, 80), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
         return image
 
