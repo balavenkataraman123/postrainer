@@ -123,4 +123,4 @@ class Situp(Preprocessing):
     def preprocess(vecs: np.array) -> np.array:
         stats = Situp.get_stats(vecs)
         names = ["r_ha", "l_ha", "ka", "tr", "r_ts", "l_ts", "ks"]
-        return [stats[i] for i in names]
+        return np.array([stats[i] for i in names])

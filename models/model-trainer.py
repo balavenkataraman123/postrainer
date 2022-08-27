@@ -140,7 +140,7 @@ outputs = layers.Dense(1, activation="sigmoid")(x)
 model = keras.Model(inputs, outputs)
 
 model.compile(optimizer="rmsprop", loss="binary_crossentropy", metrics=["accuracy"])
-history = model.fit(x=np.array(x_train), y=y_train, validation_data=(np.array(x_test), y_test), epochs=100, batch_size=32, callbacks=[keras.callbacks.ModelCheckpoint(filepath="model.keras", save_best_only=True)])
+history = model.fit(x=np.array(x_train), y=y_train, validation_data=(np.array(x_test), y_test), epochs=100, batch_size=32, callbacks=[keras.callbacks.ModelCheckpoint(filepath="pushup-model.keras", save_best_only=True)])
 
-other_model = keras.models.load_model("model.keras")
+other_model = keras.models.load_model("pushup-model.keras")
 print(other_model.evaluate(x=x_test, y=y_test))

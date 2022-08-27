@@ -22,10 +22,10 @@ def collect_frames(name: str, ratio: float):
 
     return frames[:int(len(frames) * ratio)]
 
-file = "data/no-pushup-0.mp4"
+file = "data/situp-0.mp4"
 
 frames = collect_frames(file, 1)
-features = [Pushup.get_stats(get_pose_info(i)[0]) for i in frames if get_pose_info(i) and not get_pose_info(i) is None]
+features = [Situp.get_stats(get_pose_info(i)[0]) for i in frames if get_pose_info(i) and not get_pose_info(i) is None]
 
 with open(f"{file}.pkl", "wb") as f:
     pickle.dump(features, f)
@@ -41,7 +41,7 @@ for image in frames:
         # add the pose and its pose information
         used_frames.append(image)
         vecs, landmarks = cur_pose
-        for name, value in Pushup.get_stats(vecs).items():
+        for name, value in Situp.get_stats(vecs).items():
             if name not in pose_params:
                 pose_params[name] = []
             pose_params[name].append(value)
