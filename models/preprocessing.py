@@ -6,7 +6,7 @@ from numpy.linalg import norm
 
 # angle of a vector
 def angle(v1: np.array, v2: np.array) -> float:
-    return acos(np.dot(v1, v2) / norm(v1) / norm(v2))
+    return acos(np.clip(np.dot(v1, v2) / norm(v1) / norm(v2), -1, 1))
 
 def dist(v1: np.array, v2: np.array, v3: np.array = None) -> float:
     """
@@ -87,6 +87,9 @@ class Pushup(Preprocessing):
 class Situp(Preprocessing):
     @staticmethod
     def get_stats(vecs: np.array) -> dict:
+        lef_elbow_angle = angle(vecs[11] - vecs[13], vecs[15] - vecs[13])
+        rig_elbow_angle = angle(vecs[12] - vecs[14], vecs[16] - vecs[14])
+
         rig_hip_angle = angle(vecs[12] - vecs[24], vecs[26] - vecs[24])
         lef_hip_angle = angle(vecs[25] - vecs[23], vecs[11] - vecs[23])
 
@@ -99,6 +102,8 @@ class Situp(Preprocessing):
 
         # torso height / torso width; useful for detecting if posture is sideways
         torso_ratio = (linalg.norm(torso[0]) + linalg.norm(torso[1])) / (linalg.norm(torso[2]) + linalg.norm(torso[3]))
+
+        # sine of various body parts
         torso_sin = (abs(torso[0][1] / norm(torso[0])) + abs(torso[1][1] / norm(torso[1]))) / 2
         rig_thigh_sin = thighs[0][1] / norm(thighs[0])
         lef_thigh_sin = thighs[1][1] / norm(thighs[1])
@@ -110,6 +115,8 @@ class Situp(Preprocessing):
             "l_ha": lef_hip_angle,
             "r_ka": rig_knee_angle,
             "l_ka": lef_knee_angle,
+            "l_ea": lef_elbow_angle,
+            "r_ea": rig_elbow_angle,
             "tr": torso_ratio,
             "ts": torso_sin,
             "r_ts": rig_thigh_sin,
@@ -121,5 +128,5 @@ class Situp(Preprocessing):
     @staticmethod
     def preprocess(vecs: np.array) -> np.array:
         stats = Situp.get_stats(vecs)
-        names = ["r_ha", "l_ha", "r_ka", "l_ka", "tr", "ts", "r_ts", "l_ts", "rig_ks", "lef_ks"]
+        names = ["r_ha", "l_ha", "r_ka", "l_ka", "l_ea", "r_ea", "tr", "ts", "r_ts", "l_ts", "rig_ks", "lef_ks"]
         return [stats[i] for i in names]
