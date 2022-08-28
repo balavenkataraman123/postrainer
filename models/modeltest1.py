@@ -206,9 +206,9 @@ while cap.isOpened():
                         justchanged = 1
                         exercise += 1
                     if min(past40elbow) > 110:
-                        image = cv2.putText(image, "YOU NEED TO GO LOWER!!! ", (20, 200), cv2.FONT_HERSHEY_SIMPLEX,1, (0, 0, 255), 2, cv2.LINE_AA)
+                        image = cv2.putText(image, "go down lower ", (20, 200), cv2.FONT_HERSHEY_SIMPLEX,1, (0, 0, 255), 2, cv2.LINE_AA)
                     if len(past40elbow) > 20 and trsa < 2:
-                        image = cv2.putText(image, "KEEP YOUR BACK STRAIGHT!!!! ", (20, 240), cv2.FONT_HERSHEY_SIMPLEX,1, (0, 0, 255), 2, cv2.LINE_AA)
+                        image = cv2.putText(image, "make sure your back is straight", (20, 240), cv2.FONT_HERSHEY_SIMPLEX,1, (0, 0, 255), 2, cv2.LINE_AA)
 
                     image = cv2.putText(image, "YOUR SCORE: " + str(prediction) , (20, 160), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
                 else:
