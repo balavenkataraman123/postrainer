@@ -112,7 +112,7 @@ class SitupScreen(Screen):
                             # with all the data from the "down-time", we check to see if the person went low enough
                             self.low_enough = False
                             for i in self.state_torso:
-                                if i <= self.down_boundary:
+                                if i <= self.low_requirement:
                                     self.low_enough = True
                             self.state_torso.clear()
                             self.tot_situp += 1
@@ -358,7 +358,7 @@ class PushupScreen(Screen):
 
                     if elbow_angle <= 110 and self.currstate == 1:
                         self.currstate = 0
-                    if elbow_angle >= 190 and self.currstate == 0:
+                    if elbow_angle >= 165 and self.currstate == 0:
                         self.currstate = 1
                         self.numpushup += 1
                     if self.numpushup == reps[exercise]:
@@ -428,11 +428,11 @@ while cap.isOpened():
     if not success:
         print("Ignoring empty camera frame.")
         continue
-    if exercises[exercise] == "PUSHUPS":
+    if exercises[exercise] == "PUSHUP":
         image = pushup_screen.render(image)
-    elif exercises[exercise] == "SITUPS":
+    elif exercises[exercise] == "SITUP":
         image = situp_screen.render(image)
-    elif exercises[exercise] == "SQUATS":
+    elif exercises[exercise] == "SQUAT":
         image = squat_screen.render(image)
     cv2.imshow("Image", image)
     if cv2.waitKey(5) & 0xFF == 27:
