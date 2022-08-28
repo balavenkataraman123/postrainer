@@ -63,8 +63,6 @@ class SitupScreen(Screen):
         self.high_requirement = 0.95
         self.down_time = 5
 
-        self.scores = []
-
     def render(self, image) -> np.array:
         global minvis, reps, exercise, jctimer, thismotquote, justchanged
         if justchanged == 1:
@@ -150,7 +148,7 @@ class SitupScreen(Screen):
                     image = self.augment_with_message(image, messages)
                     image = Screen.draw_border(image, [0, 255, 0])
 
-                    self.scores.append(in_position)
+                    scores.append(in_position)
                     image = cv2.putText(image, "YOUR SCORE: " + str(in_position), (20, 160), cv2.FONT_HERSHEY_SIMPLEX, 1,
                                         (0, 0, 255), 2, cv2.LINE_AA)
                 else:
@@ -191,8 +189,6 @@ class SquatScreen(Screen):
         self.low_requirement = 1.2
         self.high_requirement = 2.7
         self.down_time = 5
-
-        self.scores = []
 
     def render(self, image) -> np.array:
         global minvis, reps, exercise, jctimer, thismotquote, justchanged
@@ -285,7 +281,7 @@ class SquatScreen(Screen):
                     image = self.augment_with_message(image, messages)
                     image = Screen.draw_border(image, [0, 255, 0])
 
-                    self.scores.append(in_position)
+                    scores.append(in_position)
                     image = cv2.putText(image, "YOUR SCORE: " + str(in_position), (20, 160), cv2.FONT_HERSHEY_SIMPLEX, 1,
                                         (0, 0, 255), 2, cv2.LINE_AA)
                 else:
@@ -313,8 +309,6 @@ class PushupScreen(Screen):
         self.numpushup = 0
         self.currstate = 1  # 1 for up and 0 for down
         self.past40elbow = []
-
-        self.scores = []
 
     def render(self, image: np.array) -> np.array:
         global exercise, justchanged, reps, thismotquote, jctimer, minvis
@@ -376,7 +370,7 @@ class PushupScreen(Screen):
                         image = cv2.putText(image, "make sure your back is straight", (20, 240),
                                             cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
 
-                    self.scores.append(prediction)
+                    scores.append(prediction)
                     image = cv2.putText(image, "YOUR SCORE: " + str(prediction), (20, 160), cv2.FONT_HERSHEY_SIMPLEX, 1,
                                         (0, 0, 255), 2, cv2.LINE_AA)
                 else:
@@ -414,12 +408,18 @@ exercises = ["SITUPS", "PUSHUPS", "SQUATS"]
 reps = [10, 10, 10]
 jctimer = 0
 thismotquote = ""
-
+scores = []
 
 situp_screen = SitupScreen()
 pushup_screen = PushupScreen()
 squat_screen = SquatScreen()
 while cap.isOpened():
+    if exercise >= len(exercises):
+        with open("scores.txt", "wt") as f:
+            avg_score = sum(scores) / len(scores)
+            f.write(str(avg_score))
+        break
+
     success, image = cap.read()
     if not success:
         print("Ignoring empty camera frame.")
