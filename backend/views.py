@@ -4,6 +4,7 @@ from django.db import models
 from django.shortcuts import redirect 
 from django.shortcuts import get_object_or_404
 import uuid
+import openpyxl
 
 # Create your models here.
 class Item(models.Model): 
@@ -28,3 +29,20 @@ def create_item(request):
 
 def item(request, pk): 
     item = get_object_or_404(Item, pk=pk)
+
+# Read Excel file 
+def index(request): 
+    if "GET" == request.method: 
+        return render(request, "postrainer/index.hmtl",{})
+    else: 
+        excel_file = request.FILES['excel_file']
+        wb = openpyxl.load_workbook(excel_file)
+        excel_data = list() 
+        worksheet = wb["Sheet1"]
+        print(worksheet)
+        for row in worksheet.iter.rows(): 
+            row_data = list() 
+            for cell in row: 
+                row_data.append(str(cell.value))
+            excel_data.append(row_data)
+        return render(request, 'postrainer/index.html',{"excel_data": excel_data})
