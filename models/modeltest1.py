@@ -31,12 +31,14 @@ class Screen:
         self.increment = 40
 
     @staticmethod
-    def query_model(model: keras.Model, vecs: np.array, workout: Preprocessing):
+    def query_model(model: keras.Model, vecs: np.array, workout):
         return model(workout.preprocess(vecs).reshape((1, -1))).numpy()[0, 0]
 
     def augment_with_message(self, image: np.array, messages: List[str]):
+        # text_bubble = cv2.resize(cv2.imread('data/images/text-bubble.png', cv2.IMREAD_COLOR), (1000, 40))
         for message, y in zip(messages, range(120, 120 + 40 * len(messages), 40)):
-            image = cv2.putText(image, message, (20, y), cv2.FONT_HERSHEY_SIMPLEX,1, (0, 0, 255), 2, cv2.LINE_AA)
+            # image = image[y:y+40,0:1000]
+            image = cv2.putText(image, message, (20, y + 5), cv2.FONT_HERSHEY_SIMPLEX,1, (0, 0, 255), 2, cv2.LINE_AA)
         return image
 
     @staticmethod
