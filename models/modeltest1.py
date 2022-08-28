@@ -66,7 +66,7 @@ class SitupScreen(Screen):
     def render(self, image) -> np.array:
         global minvis, reps, exercise, jctimer, thismotquote, justchanged
         if justchanged == 1:
-            jctimer = 20
+            jctimer = 400
             thismotquote = random.choice(motivquotes)
             justchanged = 0
         if jctimer == 0:
@@ -176,7 +176,7 @@ class PushupScreen(Screen):
     def render(self, image: np.array) -> np.array:
         global exercise, justchanged, reps, thismotquote, jctimer, minvis
         if justchanged == 1:
-            jctimer = 20
+            jctimer = 400
             thismotquote = random.choice(motivquotes)
             justchanged = 0
         if jctimer == 0:
@@ -198,7 +198,7 @@ class PushupScreen(Screen):
             if parts is not None:
                 (vecs, landmarks) = parts
                 stats = (Pushup.get_stats(vecs))
-                elbow_angle = (stats["lef_ea"] + stats["rig_ea"]) / 2
+                elbow_angle = (stats["cdis"])
                 trsa = stats["ta"]
                 image.flags.writeable = True
                 input_vector = Pushup.preprocess(vecs).reshape((1, -1))
@@ -218,9 +218,9 @@ class PushupScreen(Screen):
                     if len(self.past40elbow) > 40:
                         self.past40elbow.pop(0)
 
-                    if elbow_angle <= 1.309 and self.currstate == 1:
+                    if elbow_angle <= 110 and self.currstate == 1:
                         self.currstate = 0
-                    if elbow_angle >= 2.61799 and self.currstate == 0:
+                    if elbow_angle >= 190 and self.currstate == 0:
                         self.currstate = 1
                         self.numpushup += 1
                     if self.numpushup == reps[exercise]:
@@ -229,7 +229,7 @@ class PushupScreen(Screen):
                     if min(self.past40elbow) > 110:
                         image = cv2.putText(image, "go down lower ", (20, 200), cv2.FONT_HERSHEY_SIMPLEX, 1,
                                             (0, 0, 255), 2, cv2.LINE_AA)
-                    if len(self.past40elbow) > 20 and trsa < 2:
+                    if len(self.past40elbow) > 20 and trsa < 2.5:
                         image = cv2.putText(image, "make sure your back is straight", (20, 240),
                                             cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
 
@@ -266,8 +266,8 @@ cap = cv2.VideoCapture(0)
 exercise = 0
 justchanged = 1
 minvis = 1
-exercises = ["SITUPS", "PUSHUPS"]
-reps = [10, 10]
+exercises = ["PUSHUPS" , "SITUPS"]
+reps = [3, 3]
 jctimer = 0
 thismotquote = ""
 
