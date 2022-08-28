@@ -414,10 +414,12 @@ situp_screen = SitupScreen()
 pushup_screen = PushupScreen()
 squat_screen = SquatScreen()
 while cap.isOpened():
-    if exercise >= len(exercises):
-        with open("scores.txt", "wt") as f:
+    if justchanged == 1 and exercise > 0:
+        with open( excercises[exercise-1] + "_scores.txt", "wt") as f:
             avg_score = sum(scores) / len(scores)
             f.write(str(avg_score))
+            scores = []
+    if exercise >= len(exercises):
         break
 
     success, image = cap.read()
