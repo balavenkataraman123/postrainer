@@ -31,13 +31,14 @@ def get_pose_info(image):
         return None
     x_pos = []
     y_pos = []
-    minvis = 1
+    minvislis = []
     for i in str(p_landmarks).split('landmark')[1:]:
         i_1 = i.split()
         x_pos.append(int(640 * float(i_1[2])))
         y_pos.append(int(480 * float(i_1[4])))
-        minvis = min(minvis, float(i_1[8]))
-
+        minvislis.append(float(i_1[8]))
+    minvislis.sort()
+    minvis = minvislis[5]
     return ((np.array(list(zip(x_pos, y_pos))), p_landmarks), minvis)
 
 class Preprocessing:
