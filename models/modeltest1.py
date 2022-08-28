@@ -63,6 +63,8 @@ class SitupScreen(Screen):
         self.high_requirement = 0.95
         self.down_time = 5
 
+        self.scores = []
+
     def render(self, image) -> np.array:
         global minvis, reps, exercise, jctimer, thismotquote, justchanged
         if justchanged == 1:
@@ -118,6 +120,7 @@ class SitupScreen(Screen):
                             self.tot_situp += 1
 
                             if self.tot_situp == reps[exercise]:
+                                justchanged = 1
                                 exercise += 1
                         self.last_up = time.time()
                         self.last_state = "up"
@@ -146,6 +149,10 @@ class SitupScreen(Screen):
 
                     image = self.augment_with_message(image, messages)
                     image = Screen.draw_border(image, [0, 255, 0])
+
+                    self.scores.append(in_position)
+                    image = cv2.putText(image, "YOUR SCORE: " + str(in_position), (20, 160), cv2.FONT_HERSHEY_SIMPLEX, 1,
+                                        (0, 0, 255), 2, cv2.LINE_AA)
                 else:
                     image = Screen.draw_border(image, [0, 0, 255])
 
@@ -165,13 +172,149 @@ class SitupScreen(Screen):
                                 cv2.LINE_AA, )
         return image
 
+
+class SquatScreen(Screen):
+    def __init__(self):
+        super().__init__()
+        self.model = keras.models.load_model("squat-model.keras")
+        self.last_state = None
+        self.state_angle = []
+        self.tot_squat = 0
+        self.last_down = 0
+
+        self.high_enough = True
+        self.low_enough = True
+        self.back_straight = True
+
+        self.up_boundary = 2.35
+        self.down_boundary = 1.5
+        self.low_requirement = 1.2
+        self.high_requirement = 2.7
+        self.down_time = 5
+
+        self.scores = []
+
+    def render(self, image) -> np.array:
+        global minvis, reps, exercise, jctimer, thismotquote, justchanged
+        if justchanged == 1:
+            jctimer = 400
+            thismotquote = random.choice(motivquotes)
+            justchanged = 0
+        if jctimer == 0:
+
+            image.flags.writeable = False
+            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+            parts = None
+            minvis = 1
+            try:
+                a = get_pose_info(image)
+                parts = a[0]
+                minvis = a[1]
+            except:
+                minvis = 0.69
+
+            image.flags.writeable = True
+            image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+            image = cv2.resize(image, (1280, 960), interpolation=cv2.INTER_AREA)
+
+            if parts is not None:
+                (vecs, landmarks) = parts
+                mp_drawing.draw_landmarks(
+                    image,
+                    landmarks,
+                    mp_pose.POSE_CONNECTIONS,
+                    landmark_drawing_spec=mp_drawing_styles.get_default_pose_landmarks_style())
+                stats = Squat.get_stats(vecs)
+                if minvis <= 0.2:
+                    image = cv2.putText(image, "The camera cannot see you well", (20, 120), cv2.FONT_HERSHEY_SIMPLEX, 1,
+                                        (0, 0, 255), 2, cv2.LINE_AA)
+
+                in_position = Screen.query_model(self.model, vecs, Squat())
+                # have we detected the person
+                if in_position >= 0.5:
+                    # get some measurements
+                    knee_angle = (stats['r_ka'] + stats['l_ka']) / 2
+
+                    torso_bot, torso_top = (vecs[23] + vecs[24]) / 2, (vecs[12] + vecs[11]) / 2
+                    avg_torso_vec = torso_top - torso_bot
+                    torso_sin = abs(avg_torso_vec[1] / norm(avg_torso_vec))
+                    print(knee_angle, torso_sin)
+                    self.back_straight = torso_sin >= 0.7
+
+                    if knee_angle >= self.up_boundary:
+                        # now in "up state"
+                        if self.last_state is "down":
+                            # with all the data from the "down-time", we check to see if the person went low enough
+                            self.low_enough = False
+                            for i in self.state_angle:
+                                if i <= self.low_requirement:
+                                    self.low_enough = True
+                            self.state_angle.clear()
+                            self.tot_squat += 1
+
+                            if self.tot_squat == reps[exercise]:
+                                justchanged = 1
+                                exercise += 1
+                        self.last_down = time.time()
+                        self.last_state = "up"
+
+                        self.state_angle.append(knee_angle)
+                    if knee_angle <= self.down_boundary:
+                        # now in "down state"
+                        if self.last_state is "up":
+                            # check if the person went high enough when they went up
+                            self.high_enough = False
+                            for i in self.state_angle:
+                                if i >= self.high_requirement:
+                                    self.high_enough = True
+                            self.state_angle.clear()
+                        self.last_state = "down"
+
+                        self.state_angle.append(knee_angle)
+
+                    messages = []
+                    if not self.low_enough:
+                        messages.append("When going down, make sure to make a 90 degree angle")
+                    if not self.high_enough:
+                        messages.append("When going up, make sure to come all the way up")
+                    if not self.back_straight:
+                        messages.append("Make sure your back stays straight (more vertical)")
+                    if time.time() - self.last_down >= self.down_time:
+                        messages.append("Let's do another squat (or increase your movement)!!")
+
+                    image = self.augment_with_message(image, messages)
+                    image = Screen.draw_border(image, [0, 255, 0])
+
+                    self.scores.append(in_position)
+                    image = cv2.putText(image, "YOUR SCORE: " + str(in_position), (20, 160), cv2.FONT_HERSHEY_SIMPLEX, 1,
+                                        (0, 0, 255), 2, cv2.LINE_AA)
+                else:
+                    image = Screen.draw_border(image, [0, 0, 255])
+
+                image = cv2.putText(image, str(self.tot_squat), (20, 80), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2,
+                                    cv2.LINE_AA)
+        else:
+            jctimer -= 1
+            image = cv2.resize(image, (1280, 960), interpolation=cv2.INTER_AREA)
+            image = cv2.putText(image, "DO " + str(reps[exercise]) + " SQUATS", (20, 20),
+                                cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
+            image = cv2.putText(image, "put your laptop on a table 6 feet away from you", (10, 90),
+                                cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA, )
+            image = cv2.putText(image, "do your squat facing sideways", (10, 115),
+                                cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA, )
+
+            image = cv2.putText(image, thismotquote, (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2,
+                                cv2.LINE_AA, )
+        return image
+
 class PushupScreen(Screen):
     def __init__(self):
         super().__init__()
         self.numpushup = 0
         self.currstate = 1  # 1 for up and 0 for down
         self.past40elbow = []
-        
+
+        self.scores = []
 
     def render(self, image: np.array) -> np.array:
         global exercise, justchanged, reps, thismotquote, jctimer, minvis
@@ -233,6 +376,7 @@ class PushupScreen(Screen):
                         image = cv2.putText(image, "make sure your back is straight", (20, 240),
                                             cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
 
+                    self.scores.append(prediction)
                     image = cv2.putText(image, "YOUR SCORE: " + str(prediction), (20, 160), cv2.FONT_HERSHEY_SIMPLEX, 1,
                                         (0, 0, 255), 2, cv2.LINE_AA)
                 else:
@@ -266,14 +410,15 @@ cap = cv2.VideoCapture(0)
 exercise = 0
 justchanged = 1
 minvis = 1
-exercises = ["PUSHUPS" , "SITUPS"]
-reps = [3, 3]
+exercises = ["SITUPS", "PUSHUPS", "SQUATS"]
+reps = [10, 10, 10]
 jctimer = 0
 thismotquote = ""
 
 
 situp_screen = SitupScreen()
 pushup_screen = PushupScreen()
+squat_screen = SquatScreen()
 while cap.isOpened():
     success, image = cap.read()
     if not success:
@@ -283,6 +428,8 @@ while cap.isOpened():
         image = pushup_screen.render(image)
     elif exercises[exercise] == "SITUPS":
         image = situp_screen.render(image)
+    elif exercises[exercise] == "SQUATS":
+        image = squat_screen.render(image)
     cv2.imshow("Image", image)
     if cv2.waitKey(5) & 0xFF == 27:
         break
