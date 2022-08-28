@@ -1,0 +1,114 @@
+@import url('https://fonts.googleapis.com/css2?family=Bangers&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Lato&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Dosis&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Overpass&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Changa&display=swap');
+
+html, body {
+  height: 100%;
+  width: auto;
+  margin: 0;
+  background-color: #1a1919;
+
+}
+
+.downloadPage {
+  background-image: url(weights.jpg);
+  height: 100%;
+  width: 100%;
+  opacity: 0.75;
+  min-width: 1000;
+}
+
+html {
+  overflow-x: hidden;
+}
+
+@keyframes fadeIn {
+  0% { opacity: 0; }
+  100% {opacity: 1; }
+}
+
+.downloadHeader {
+  color: white;
+  font-size: 100px;
+  font-family: 'Roboto';
+  animation: fadeIn 3s;
+}
+
+.logo {
+  width: 280px;
+}
+
+nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: nowrap;
+  background-color: black;
+  padding: 0px;
+}
+
+nav ul {
+  padding-inline-start: 0px;
+  margin-inline-end: 3em;
+}
+
+nav ul li {
+  display: inline-block;
+  justify-content: space-evenly;
+  flex-wrap: nowrap;
+  vertical-align: middle;
+  list-style: none;
+  margin: 10px 30px;
+  font-size: 25px;
+  color:white;
+}
+
+nav ul li a {
+  color: #d46337;
+  text-decoration: none;
+  font-family: 'Bangers';
+}
+
+nav ul li a:hover {
+  color: #74d3f2
+}
+
+.active {
+  color: #252669;
+}
+
+.downloadButton {
+  height: 130px;
+  width: 380px;
+  font-size: 40px;
+  font-family: 'Roboto';
+  text-decoration: none;
+  color: #d46337;
+  border-radius: 15px;
+  border: 5px solid white;
+}
+
+.downloadInstructions {
+  color:#d46337;
+  font-family: 'Changa';
+}
+
+.furtherInstructions {
+  color: white;
+  font-size: 18px;
+  font-family: 'Overpass';
+}
+
+.container {
+  width: 90%;
+  height: 350px;
+  padding: 15px;
+  background: black;
+  opacity: 0.8;
+  border-radius: 15px;
+  margin-bottom: 10px;
+}
+
