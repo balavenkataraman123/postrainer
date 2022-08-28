@@ -18,16 +18,16 @@ from preprocessing import *
 from PIL import Image
 
 motivquotes = [
-" \"The last three or four reps is what makes the muscle grow. This area of pain divides a champion from someone who is not a champion \"-Arnold Schwarzenegger", 
-" \"The successful warrior is the average man, with laser-like focus.\" -Bruce Lee",
-" \"The pain you feel today will be the strength you feel tomorrow.\" -Arnold Schwarzenegger",
-" \"You miss 100% of the shots you don\'t take.\" -Wayne Gretzky",
-"\"Blood, sweat and respect. First two you give. Last one you earn.\" -The Rock"
+    " \"The last three or four reps is what makes the muscle grow. This area of pain divides a champion from someone who is not a champion \"-Arnold Schwarzenegger",
+    " \"The successful warrior is the average man, with laser-like focus.\" -Bruce Lee",
+    " \"The pain you feel today will be the strength you feel tomorrow.\" -Arnold Schwarzenegger",
+    " \"You miss 100% of the shots you don\'t take.\" -Wayne Gretzky",
+    "\"Blood, sweat and respect. First two you give. Last one you earn.\" -The Rock"
 ]
 
+
 class Screen:
-    def __init__(self, camera: cv2.VideoCapture):
-        self.cap = camera
+    def __init__(self):
         self.increment = 40
 
     @staticmethod
@@ -35,18 +35,18 @@ class Screen:
         return model(workout.preprocess(vecs).reshape((1, -1))).numpy()[0, 0]
 
     def augment_with_message(self, image: np.array, messages: List[str]):
-        # text_bubble = cv2.resize(cv2.imread('data/images/text-bubble.png', cv2.IMREAD_UNCHANGED), (1000, 40))
         for message, y in zip(messages, range(120, 120 + 40 * len(messages), 40)):
-            # image[y:y+40,0:1000] = cv2.addWeighted()
-            image = cv2.putText(image, message, (20, y + 5), cv2.FONT_HERSHEY_SIMPLEX,1, (0, 0, 255), 2, cv2.LINE_AA)
-        return image
+            image = cv2.putText(image, message, (20, y + 5), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
+        return image[:,:,:3].astype("uint8")
 
     @staticmethod
     def draw_border(image: np.array, color: list) -> np.array:
         return cv2.copyMakeBorder(image, 20, 20, 20, 20, cv2.BORDER_CONSTANT, value=color)
+
+
 class SitupScreen(Screen):
-    def __init__(self, camera: cv2.VideoCapture):
-        super().__init__(camera)
+    def __init__(self):
+        super().__init__()
         self.model = keras.models.load_model("situp-model.keras")
         self.last_state = None
         self.state_torso = []
@@ -61,13 +61,14 @@ class SitupScreen(Screen):
         self.low_requirement = 0.1
         self.high_requirement = 0.95
         self.down_time = 5
-    def render(self) -> np.array:
-        success, frame = self.cap.read()
-        if not success:
-            print("Ignoring emtpy camera frame")
-            return
 
-        image = frame
+    def render(self, image) -> np.array:
+        global minvis
+        if minvis <= 0.2:
+            image = cv2.putText(image, "The camera cannot see you well", (20, 120), cv2.FONT_HERSHEY_SIMPLEX, 1,
+                                (0, 0, 255), 2, cv2.LINE_AA)
+            return image
+
         image.flags.writeable = False
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         parts = get_pose_info(image)
@@ -75,8 +76,6 @@ class SitupScreen(Screen):
         image.flags.writeable = True
         image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
         image = cv2.resize(image, (1280, 960), interpolation=cv2.INTER_AREA)
-
-        messages = []
 
         if parts is not None:
             vecs, landmarks = parts
@@ -134,35 +133,20 @@ class SitupScreen(Screen):
             else:
                 image = Screen.draw_border(image, [0, 0, 255])
 
-        image = cv2.putText(image, str(self.tot_situp), (20, 80), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
+        image = cv2.putText(image, str(self.tot_situp), (20, 80), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2,
+                            cv2.LINE_AA)
         return image
 
-model = keras.models.load_model("pushup-model.keras")
+class PushupScreen(Screen):
+    def __init__(self):
+        super().__init__()
+        self.numpushup = 0
+        self.currstate = 1  # 1 for up and 0 for down
+        self.past40elbow = []
 
-# define the camera
-cap = cv2.VideoCapture(0)
+    def render(self, image: np.array) -> np.array:
+        global exercise, justchanged, reps, thismotquote, jctimer, minvis
 
-numpushup = 0
-currstate = 1 # 1 for up and 0 for down
-predictionaverage = 0
-past40elbow = []
-
-exercise = 1
-justchanged = 1
-
-exercises = ["PUSHUPS", "SITUPS"]
-reps = [10]
-jctimer = 0
-thismotquote = ""
-minvis = 1
-
-situp_screen = SitupScreen(cap)
-while cap.isOpened():
-    success, image = cap.read()
-    if not success:
-        print("Ignoring empty camera frame.")
-        continue
-    if exercises[exercise] == "PUSHUPS":
         if justchanged == 1:
             jctimer = 200
             thismotquote = random.choice(motivquotes)
@@ -175,44 +159,50 @@ while cap.isOpened():
             image.flags.writeable = True
             image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
             image = cv2.resize(image, (1280, 960), interpolation=cv2.INTER_AREA)
+            landmarks = None
             if parts is not None:
                 vecs, landmarks = parts
                 stats = (Pushup.get_stats(vecs))
 
                 elbow_angle = (stats["lef_ea"] + stats["rig_ea"]) / 2
                 trsa = stats["ta"]
-                image.flags.writeable = True    
+                image.flags.writeable = True
                 input_vector = Pushup.preprocess(vecs).reshape((1, -1))
-                
+
                 prediction = model(input_vector).numpy()[0, 0]
-                image = cv2.putText(image, str(numpushup), (20, 80), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
+                image = cv2.putText(image, str(self.numpushup), (20, 80), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2,
+                                    cv2.LINE_AA)
 
                 if minvis <= 0.2:
-                    image = cv2.putText(image, "The camera cannot see you well", (20, 120), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
+                    image = cv2.putText(image, "The camera cannot see you well", (20, 120), cv2.FONT_HERSHEY_SIMPLEX, 1,
+                                        (0, 0, 255), 2, cv2.LINE_AA)
                 if prediction > 0.5:
-                    image = cv2.copyMakeBorder(image ,20,20,20,20,cv2.BORDER_CONSTANT,value=[0, 255, 0])
+                    image = cv2.copyMakeBorder(image, 20, 20, 20, 20, cv2.BORDER_CONSTANT, value=[0, 255, 0])
                     print(elbow_angle)
-                    past40elbow.append(elbow_angle)
+                    self.past40elbow.append(elbow_angle)
 
-                    if len(past40elbow) > 40:
-                        past40elbow.pop(0)
+                    if len(self.past40elbow) > 40:
+                        self.past40elbow.pop(0)
 
-                    if elbow_angle <= 1.309 and currstate == 1:
-                        currstate = 0
-                    if elbow_angle >= 2.61799 and currstate == 0:
-                        currstate = 1
-                        numpushup += 1
-                    if numpushup == reps[exercise]:
+                    if elbow_angle <= 1.309 and self.currstate == 1:
+                        self.currstate = 0
+                    if elbow_angle >= 2.61799 and self.currstate == 0:
+                        self.currstate = 1
+                        self.numpushup += 1
+                    if self.numpushup == reps[exercise]:
                         justchanged = 1
                         exercise += 1
-                    if min(past40elbow) > 110:
-                        image = cv2.putText(image, "go down lower ", (20, 200), cv2.FONT_HERSHEY_SIMPLEX,1, (0, 0, 255), 2, cv2.LINE_AA)
-                    if len(past40elbow) > 20 and trsa < 2:
-                        image = cv2.putText(image, "make sure your back is straight", (20, 240), cv2.FONT_HERSHEY_SIMPLEX,1, (0, 0, 255), 2, cv2.LINE_AA)
+                    if min(self.past40elbow) > 110:
+                        image = cv2.putText(image, "go down lower ", (20, 200), cv2.FONT_HERSHEY_SIMPLEX, 1,
+                                            (0, 0, 255), 2, cv2.LINE_AA)
+                    if len(self.past40elbow) > 20 and trsa < 2:
+                        image = cv2.putText(image, "make sure your back is straight", (20, 240),
+                                            cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
 
-                    image = cv2.putText(image, "YOUR SCORE: " + str(prediction) , (20, 160), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
+                    image = cv2.putText(image, "YOUR SCORE: " + str(prediction), (20, 160), cv2.FONT_HERSHEY_SIMPLEX, 1,
+                                        (0, 0, 255), 2, cv2.LINE_AA)
                 else:
-                    image = cv2.copyMakeBorder(image ,20,20,20,20,cv2.BORDER_CONSTANT,value=[0, 0, 255])
+                    image = cv2.copyMakeBorder(image, 20, 20, 20, 20, cv2.BORDER_CONSTANT, value=[0, 0, 255])
 
             mp_drawing.draw_landmarks(
                 image,
@@ -222,14 +212,43 @@ while cap.isOpened():
         else:
             jctimer -= 1
             image = cv2.resize(image, (1280, 960), interpolation=cv2.INTER_AREA)
-            image = cv2.putText(image, "DO " + str(reps[exercise]) + " " + exercises[exercise], (20, 20), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
+            image = cv2.putText(image, "DO " + str(reps[exercise]) + " " + exercises[exercise], (20, 20),
+                                cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
             if exercises[exercise] == "PUSHUPS":
-                image = cv2.putText(image, "put your laptop on the floor, about 6 feet away from you", (10, 90), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA,)    
-                image = cv2.putText(image, "do your pushup parallel to your screen", (10, 115), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA,)    
+                image = cv2.putText(image, "put your laptop on the floor, about 6 feet away from you", (10, 90),
+                                    cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA, )
+                image = cv2.putText(image, "do your pushup parallel to your screen", (10, 115),
+                                    cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA, )
 
-            image = cv2.putText(image, thismotquote, (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2, cv2.LINE_AA,)
+            image = cv2.putText(image, thismotquote, (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2,
+                                cv2.LINE_AA, )
+        return image
+
+model = keras.models.load_model("pushup-model.keras")
+
+# define the camera
+cap = cv2.VideoCapture(0)
+
+exercise = 0
+justchanged = 1
+
+exercises = ["PUSHUPS", "SITUPS"]
+reps = [10, 10]
+jctimer = 0
+thismotquote = ""
+minvis = 1
+
+situp_screen = SitupScreen()
+pushup_screen = PushupScreen()
+while cap.isOpened():
+    success, image = cap.read()
+    if not success:
+        print("Ignoring empty camera frame.")
+        continue
+    if exercises[exercise] == "PUSHUPS":
+        image = pushup_screen.render(image)
     elif exercises[exercise] == "SITUPS":
-        image = situp_screen.render()
+        image = situp_screen.render(image)
     cv2.imshow("Image", image)
     if cv2.waitKey(5) & 0xFF == 27:
         break
