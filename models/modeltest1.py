@@ -63,7 +63,7 @@ class SitupScreen(Screen):
         self.down_time = 5
 
     def render(self, image) -> np.array:
-        global minvis
+        global minvis, reps, exercise
         if minvis <= 0.2:
             image = cv2.putText(image, "The camera cannot see you well", (20, 120), cv2.FONT_HERSHEY_SIMPLEX, 1,
                                 (0, 0, 255), 2, cv2.LINE_AA)
@@ -103,6 +103,9 @@ class SitupScreen(Screen):
                                 self.low_enough = True
                         self.state_torso.clear()
                         self.tot_situp += 1
+
+                        if self.tot_situp == reps[exercise]:
+                            exercise += 1
                     self.last_up = time.time()
                     self.last_state = "up"
 
