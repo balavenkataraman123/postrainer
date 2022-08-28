@@ -404,8 +404,12 @@ cap = cv2.VideoCapture(0)
 exercise = 0
 justchanged = 1
 minvis = 1
-exercises = ["SITUPS", "PUSHUPS", "SQUATS"]
-reps = [10, 10, 10]
+ll = []
+with open("workout.txt", "r") as f:
+    ll = [i.strip() for i in f.readlines()]
+
+exercises = [i.split()[0] for i in ll]
+reps = [int(i.split()[1]) for i in ll]
 jctimer = 0
 thismotquote = ""
 scores = []
@@ -414,12 +418,10 @@ situp_screen = SitupScreen()
 pushup_screen = PushupScreen()
 squat_screen = SquatScreen()
 while cap.isOpened():
-    if justchanged == 1 and exercise > 0:
-        with open( excercises[exercise-1] + "_scores.txt", "wt") as f:
+    if exercise >= len(exercises):
+        with open("scores.txt", "wt") as f:
             avg_score = sum(scores) / len(scores)
             f.write(str(avg_score))
-            scores = []
-    if exercise >= len(exercises):
         break
 
     success, image = cap.read()
