@@ -1,0 +1,172 @@
+@import url('https://fonts.googleapis.com/css2?family=Bangers&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Lato&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Dosis&display=swap');
+
+html, body {
+  height: 100%;
+  width: auto;
+  margin: 0;
+  background-color: #1a1919;
+
+}
+
+.meetTheTeamPage {
+  background-image: url(biking.jpg);
+  height: 100%;
+  width: 100%;
+  opacity: 0.75;
+  min-width: 1000;
+}
+
+html {
+  overflow-x: hidden;
+}
+
+@keyframes fadeIn {
+  0% { opacity: 0; }
+  100% {opacity: 1; }
+}
+
+.meetTheTeamHeader {
+  color: black;
+  font-size: 100px;
+  font-family: 'Roboto';
+  animation: fadeIn 3s;
+}
+
+.logo {
+  width: 280px;
+}
+
+nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: nowrap;
+  background-color: black;
+  padding: 0px;
+}
+
+nav ul {
+  padding-inline-start: 0px;
+  margin-inline-end: 3em;
+}
+
+nav ul li {
+  display: inline-block;
+  justify-content: space-evenly;
+  flex-wrap: nowrap;
+  vertical-align: middle;
+  list-style: none;
+  margin: 10px 30px;
+  font-size: 25px;
+  color:white;
+}
+
+nav ul li a {
+  color: #d46337;
+  text-decoration: none;
+  font-family: 'Bangers';
+}
+
+nav ul li a:hover {
+  color: #74d3f2
+}
+
+.active {
+  color: #252669;
+}
+
+.memberPhotos img {
+  border-radius:20px;
+  border: 8px solid #b7bdc7
+}
+
+.memberPhotos {
+  display:flex;
+  flex-direction: row;
+  justify-content: space-around;
+  padding: 30px;
+}
+
+.sophiePhotos {
+  color:white;
+  text-align: center;
+  width: 383px;
+  
+}
+
+.sophiePhotos img {
+  display: block;
+  margin: 0 auto;
+}
+
+.sophiePhotos p {
+  font-size: 20px;
+  font-family: 'Dosis';
+}
+
+.sophiePhotos h1 {
+  color: #9193c9
+}
+
+.balaPhotos {
+  color:white;
+  text-align: center;
+  width: 384px; 
+}
+
+.balaPhotos img {
+  display: block;
+  margin: 0 auto;
+}
+
+.balaPhotos p {
+  font-size: 20px;
+  font-family: 'Dosis';
+}
+
+.balaPhotos h1 {
+  color: #9193c9
+}
+
+.danielPhotos {
+  color: white;
+  text-align: center;
+  width: 384px;
+}
+
+.danielPhotos p {
+  font-size: 20px;
+  font-family: 'Dosis';
+}
+
+.danielPhotos img {
+  display: block;
+  margin: 0 auto;
+}
+
+.danielPhotos h1 {
+  color: #9193c9
+}
+
+.naomiPhotos {
+  color: white;
+  text-align: center;
+  width: 383px;
+}
+
+.naomiPhotos img {
+  display: block;
+  margin: 0 auto;
+}
+
+.naomiPhotos p {
+  font-size: 20px;
+  font-family: 'Dosis';
+}
+
+.naomiPhotos h1 {
+  color: #9193c9
+}
