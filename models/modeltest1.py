@@ -1,4 +1,5 @@
 from cmath import e
+from os import stat
 import cv2
 import mediapipe as mp
 import numpy as np
@@ -63,81 +64,105 @@ class SitupScreen(Screen):
         self.down_time = 5
 
     def render(self, image) -> np.array:
-        global minvis, reps, exercise
-        if minvis <= 0.2:
-            image = cv2.putText(image, "The camera cannot see you well", (20, 120), cv2.FONT_HERSHEY_SIMPLEX, 1,
-                                (0, 0, 255), 2, cv2.LINE_AA)
-            return image
+        global minvis, reps, exercise, jctimer, thismotquote, justchanged
+        if justchanged == 1:
+            jctimer = 20
+            thismotquote = random.choice(motivquotes)
+            justchanged = 0
+        if jctimer == 0:
 
-        image.flags.writeable = False
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        parts = get_pose_info(image)
+            image.flags.writeable = False
+            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+            parts = None
+            minvis = 1
+            try:
+                a = get_pose_info(image)
+                parts = a[0]
+                minvis = a[1]
+            except:
+                minvis = 0.69
 
-        image.flags.writeable = True
-        image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
-        image = cv2.resize(image, (1280, 960), interpolation=cv2.INTER_AREA)
+            image.flags.writeable = True
+            image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+            image = cv2.resize(image, (1280, 960), interpolation=cv2.INTER_AREA)
 
-        if parts is not None:
-            vecs, landmarks = parts
-            mp_drawing.draw_landmarks(
-                image,
-                landmarks,
-                mp_pose.POSE_CONNECTIONS,
-                landmark_drawing_spec=mp_drawing_styles.get_default_pose_landmarks_style())
-            stats = Situp.get_stats(vecs)
+            if parts is not None:
+                (vecs, landmarks) = parts
+                mp_drawing.draw_landmarks(
+                    image,
+                    landmarks,
+                    mp_pose.POSE_CONNECTIONS,
+                    landmark_drawing_spec=mp_drawing_styles.get_default_pose_landmarks_style())
+                stats = Situp.get_stats(vecs)
+                if minvis <= 0.2:
+                    image = cv2.putText(image, "The camera cannot see you well", (20, 120), cv2.FONT_HERSHEY_SIMPLEX, 1,
+                                    (0, 0, 255), 2, cv2.LINE_AA)
+                
+                in_position = Screen.query_model(self.model, vecs, Situp())
+                # have we detected the person
+                if in_position >= 0.5:
+                    print(stats)
+                    # get some measurements
+                    torso_angle = (stats['r_ha'] + stats['l_ha']) / 2
+                    torso_sin = stats['ts']
 
-            in_position = Screen.query_model(self.model, vecs, Situp())
-            # have we detected the person
-            if in_position >= 0.5:
-                # get some measurements
-                torso_angle = (stats['r_ha'] + stats['l_ha']) / 2
-                torso_sin = stats['ts']
+                    if torso_angle <= self.up_boundary:
+                        # now in "up state"
+                        if self.last_state is "down":
+                            # with all the data from the "down-time", we check to see if the person went low enough
+                            self.low_enough = False
+                            for i in self.state_torso:
+                                if i <= self.down_boundary:
+                                    self.low_enough = True
+                            self.state_torso.clear()
+                            self.tot_situp += 1
 
-                if torso_angle <= self.up_boundary:
-                    # now in "up state"
-                    if self.last_state is "down":
-                        # with all the data from the "down-time", we check to see if the person went low enough
-                        self.low_enough = False
-                        for i in self.state_torso:
-                            if i <= self.down_boundary:
-                                self.low_enough = True
-                        self.state_torso.clear()
-                        self.tot_situp += 1
+                            if self.tot_situp == reps[exercise]:
+                                exercise += 1
+                        self.last_up = time.time()
+                        self.last_state = "up"
 
-                        if self.tot_situp == reps[exercise]:
-                            exercise += 1
-                    self.last_up = time.time()
-                    self.last_state = "up"
+                        self.state_torso.append(torso_sin)
+                    if torso_angle >= self.down_boundary:
+                        # now in "down state"
+                        if self.last_state is "up":
+                            # check if the person went high enough when they went up
+                            self.high_enough = False
+                            for i in self.state_torso:
+                                if i >= self.high_requirement:
+                                    self.high_enough = True
+                            self.state_torso.clear()
+                        self.last_state = "down"
 
-                    self.state_torso.append(torso_sin)
-                if torso_angle >= self.down_boundary:
-                    # now in "down state"
-                    if self.last_state is "up":
-                        # check if the person went high enough when they went up
-                        self.high_enough = False
-                        for i in self.state_torso:
-                            if i >= self.high_requirement:
-                                self.high_enough = True
-                        self.state_torso.clear()
-                    self.last_state = "down"
+                        self.state_torso.append(torso_sin)
 
-                    self.state_torso.append(torso_sin)
+                    messages = []
+                    if not self.low_enough:
+                        messages.append("When going down, make sure to be flat to the ground")
+                    if not self.high_enough:
+                        messages.append("When going up, make sure to come all the way up")
+                    if time.time() - self.last_up >= self.down_time:
+                        messages.append("Let's do another sit up (if you're already doing them, come higher up)!!")
 
-                messages = []
-                if not self.low_enough:
-                    messages.append("When going down, make sure to be flat to the ground")
-                if not self.high_enough:
-                    messages.append("When going up, make sure to come all the way up")
-                if time.time() - self.last_up >= self.down_time:
-                    messages.append("Let's do another sit up (if you're already doing them, come higher up)!!")
+                    image = self.augment_with_message(image, messages)
+                    image = Screen.draw_border(image, [0, 255, 0])
+                else:
+                    image = Screen.draw_border(image, [0, 0, 255])
 
-                image = self.augment_with_message(image, messages)
-                image = Screen.draw_border(image, [0, 255, 0])
-            else:
-                image = Screen.draw_border(image, [0, 0, 255])
+                image = cv2.putText(image, str(self.tot_situp), (20, 80), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2,
+                                cv2.LINE_AA)
+        else:
+            jctimer -= 1
+            image = cv2.resize(image, (1280, 960), interpolation=cv2.INTER_AREA)
+            image = cv2.putText(image, "DO " + str(reps[exercise]) + " SIT UPS", (20, 20),
+                                cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
+            image = cv2.putText(image, "put your laptop on the floor, about 6 feet away from you", (10, 90),
+                                cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA, )
+            image = cv2.putText(image, "do your sit up parallel to your screen", (10, 115),
+                                cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA, )
 
-        image = cv2.putText(image, str(self.tot_situp), (20, 80), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2,
-                            cv2.LINE_AA)
+            image = cv2.putText(image, thismotquote, (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2,
+                                cv2.LINE_AA, )
         return image
 
 class PushupScreen(Screen):
@@ -146,27 +171,33 @@ class PushupScreen(Screen):
         self.numpushup = 0
         self.currstate = 1  # 1 for up and 0 for down
         self.past40elbow = []
+        
 
     def render(self, image: np.array) -> np.array:
         global exercise, justchanged, reps, thismotquote, jctimer, minvis
-
         if justchanged == 1:
-            jctimer = 200
+            jctimer = 20
             thismotquote = random.choice(motivquotes)
             justchanged = 0
         if jctimer == 0:
             image.flags.writeable = False
             image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-            parts = get_pose_info(image)
+            parts = None
+            minvis = 1
+            try:
+                a = get_pose_info(image)
+                parts = a[0]
+                minvis = a[1]
+            except:
+                minvis = 0.69
 
             image.flags.writeable = True
             image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
             image = cv2.resize(image, (1280, 960), interpolation=cv2.INTER_AREA)
             landmarks = None
             if parts is not None:
-                vecs, landmarks = parts
+                (vecs, landmarks) = parts
                 stats = (Pushup.get_stats(vecs))
-
                 elbow_angle = (stats["lef_ea"] + stats["rig_ea"]) / 2
                 trsa = stats["ta"]
                 image.flags.writeable = True
@@ -234,12 +265,12 @@ cap = cv2.VideoCapture(0)
 
 exercise = 0
 justchanged = 1
-
-exercises = ["PUSHUPS", "SITUPS"]
+minvis = 1
+exercises = ["SITUPS", "PUSHUPS"]
 reps = [10, 10]
 jctimer = 0
 thismotquote = ""
-minvis = 1
+
 
 situp_screen = SitupScreen()
 pushup_screen = PushupScreen()
