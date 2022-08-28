@@ -5,7 +5,6 @@ import mediapipe as mp
 import numpy as np
 import numpy.linalg as linalg
 from numpy.linalg import norm
-import matplotlib.pyplot as plt
 import time
 from math import cos, sin, acos, asin, sqrt
 import tensorflow as tf
@@ -137,19 +136,18 @@ class SitupScreen(Screen):
 
                         self.state_torso.append(torso_sin)
 
-                    messages = []
                     if not self.low_enough:
-                        messages.append("When going down, make sure to be flat to the ground")
+                        image = cv2.putText(image, "when going down, make sure to be flat to the ground", (20, 160),
+                                            cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
                     if not self.high_enough:
-                        messages.append("When going up, make sure to come all the way up")
+                        image = cv2.putText(image, "come up all the way", (20, 200),
+                                            cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
                     if time.time() - self.last_up >= self.down_time:
-                        messages.append("Let's do another sit up (if you're already doing them, come higher up)!!")
-
-                    image = self.augment_with_message(image, messages)
+                        print('a')
                     image = Screen.draw_border(image, [0, 255, 0])
 
                     scores.append(in_position)
-                    image = cv2.putText(image, "YOUR SCORE: " + str(in_position), (20, 160), cv2.FONT_HERSHEY_SIMPLEX, 1,
+                    image = cv2.putText(image, "YOUR SCORE: " + str(in_position), (20, 900), cv2.FONT_HERSHEY_SIMPLEX, 1,
                                         (0, 0, 255), 2, cv2.LINE_AA)
                 else:
                     image = Screen.draw_border(image, [0, 0, 255])
@@ -270,19 +268,21 @@ class SquatScreen(Screen):
 
                     messages = []
                     if not self.low_enough:
-                        messages.append("When going down, make sure to make a 90 degree angle")
+                        image = cv2.putText(image, "make sure to make a 90 degree angle when going down", (20, 160),
+                                            cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
                     if not self.high_enough:
-                        messages.append("When going up, make sure to come all the way up")
+                        image = cv2.putText(image, "come up all the way", (20, 200),
+                                            cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
                     if not self.back_straight:
-                        messages.append("Make sure your back stays straight (more vertical)")
+                        image = cv2.putText(image, "keep your back more vertical", (20, 240),
+                                            cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
                     if time.time() - self.last_down >= self.down_time:
-                        messages.append("Let's do another squat (or increase your movement)!!")
-
-                    image = self.augment_with_message(image, messages)
+                        image = cv2.putText(image, "Increase your movement", (20, 280),
+                                            cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
                     image = Screen.draw_border(image, [0, 255, 0])
 
                     scores.append(in_position)
-                    image = cv2.putText(image, "YOUR SCORE: " + str(in_position), (20, 160), cv2.FONT_HERSHEY_SIMPLEX, 1,
+                    image = cv2.putText(image, "YOUR SCORE: " + str(in_position), (20, 900), cv2.FONT_HERSHEY_SIMPLEX, 1,
                                         (0, 0, 255), 2, cv2.LINE_AA)
                 else:
                     image = Screen.draw_border(image, [0, 0, 255])
@@ -371,7 +371,7 @@ class PushupScreen(Screen):
                                             cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
 
                     scores.append(prediction)
-                    image = cv2.putText(image, "YOUR SCORE: " + str(prediction), (20, 160), cv2.FONT_HERSHEY_SIMPLEX, 1,
+                    image = cv2.putText(image, "YOUR SCORE: " + str(prediction), (20, 900), cv2.FONT_HERSHEY_SIMPLEX, 1,
                                         (0, 0, 255), 2, cv2.LINE_AA)
                 else:
                     image = cv2.copyMakeBorder(image, 20, 20, 20, 20, cv2.BORDER_CONSTANT, value=[0, 0, 255])
@@ -419,11 +419,10 @@ pushup_screen = PushupScreen()
 squat_screen = SquatScreen()
 while cap.isOpened():
     if exercise >= len(exercises):
-        with open("scores.txt", "wt") as f:
+        with open("scores.txt", "a") as f:
             avg_score = sum(scores) / len(scores)
-            f.write(str(avg_score))
+            f.write(str(avg_score) + "\n")
         break
-
     success, image = cap.read()
     if not success:
         print("Ignoring empty camera frame.")
